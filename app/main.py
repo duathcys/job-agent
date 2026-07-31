@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+
 from app.api.v1.router import router
+from app.db.session import create_tables
 
 app = FastAPI(
     title="Job Agent API",
@@ -8,6 +10,11 @@ app = FastAPI(
 )
 
 app.include_router(router, prefix="/api/v1")
+
+
+@app.on_event("startup")
+def startup():
+    create_tables()
 
 
 @app.get("/health")
