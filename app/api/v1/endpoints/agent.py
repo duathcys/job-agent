@@ -66,3 +66,17 @@ def get_recommendations(
         }
         for job in jobs
     ]
+
+@router.post("/schedule/run-now")
+def run_now(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    스케줄러를 즉시 실행합니다. (테스트용)
+    """
+    from app.scheduler import run_agent_for_all_users
+    from fastapi.concurrency import run_in_threadpool
+    import asyncio
+
+    asyncio.create_task(run_in_threadpool(run_agent_for_all_users))
+    return {"message": "스케줄러 즉시 실행 시작"}
