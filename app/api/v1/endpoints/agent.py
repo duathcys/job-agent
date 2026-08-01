@@ -13,12 +13,12 @@ router = APIRouter()
 def run_agent(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    """
-    AI 에이전트를 실행합니다.
-    크롤링 → 요약 → 적합도 계산 → 추천 순으로 동작합니다.
-    """
     def _run():
+        from app.models.job import JobPosting
+        from app.services.email_service import send_recommendation_email
+
         agent = build_agent()
         agent.invoke({
             "user_id": current_user.id,
@@ -31,8 +31,34 @@ def run_agent(
             "error": None,
         })
 
+        # 추천 공고 조회
+        from app.db.session import SessionLocal
+        db2 = SessionLocal()
+        jobs = (
+            db2.query(JobPosting)
+            .filter(JobPosting.fit_score.isnot(None))
+            .order_by(JobPosting.fit_score.desc())
+            .limit(5)
+            .all()
+        )
+
+        job_list = [
+            {
+                "company": job.company,
+                "title": job.title,
+                "summary": job.summary,
+                "fit_score": job.fit_score,
+                "url": job.url,
+                "deadline": job.deadline,
+            }
+            for job in jobs
+        ]
+        db2.close()
+
+        send_recommendation_email(current_user.email, job_list)
+
     background_tasks.add_task(_run)
-    return {"message": "에이전트 실행을 시작했습니다."}
+    return {"message": "에이전트 실행을 시작했습니다. 완료 후 이메일로 결과를 보내드립니다!"}
 
 
 @router.get("/recommendations")
@@ -40,9 +66,6 @@ def get_recommendations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    현재 유저의 적합도 기준 상위 5개 공고를 반환합니다.
-    """
     from app.models.job import JobPosting
 
     jobs = (
@@ -67,16 +90,12 @@ def get_recommendations(
         for job in jobs
     ]
 
+
 @router.post("/schedule/run-now")
 def run_now(
     current_user: User = Depends(get_current_user),
 ):
-    """
-    스케줄러를 즉시 실행합니다. (테스트용)
-    """
     from app.scheduler import run_agent_for_all_users
-    from fastapi.concurrency import run_in_threadpool
-    import asyncio
-
-    asyncio.create_task(run_in_threadpool(run_agent_for_all_users))
+    import threading
+    threading.Thread(target=run_agent_for_all_users).start()
     return {"message": "스케줄러 즉시 실행 시작"}
