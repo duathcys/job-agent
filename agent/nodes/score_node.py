@@ -9,7 +9,7 @@ def score_node(state: AgentState) -> AgentState:
     """
     사용자 스킬과 공고를 비교해 적합도를 계산합니다.
     """
-    print("🎯 [3/4] 적합도 계산 중...")
+    print("[3/4] 적합도 계산 중...")
     try:
         db = SessionLocal()
         scored = []

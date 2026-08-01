@@ -12,7 +12,7 @@ def crawl_node(state: AgentState) -> AgentState:
     """
     원티드에서 채용공고를 수집하고 DB에 저장합니다.
     """
-    print("🔍 [1/4] 채용공고 수집 중...")
+    print("[1/4] 채용공고 수집 중...")
     try:
         db = SessionLocal()
         raw_jobs = fetch_job_list(limit=10)

@@ -9,7 +9,7 @@ def summarize_node(state: AgentState) -> AgentState:
     """
     수집된 공고를 AI로 요약합니다.
     """
-    print("📝 [2/4] 공고 요약 중...")
+    print("[2/4] 공고 요약 중...")
     try:
         db = SessionLocal()
         summarized = []
