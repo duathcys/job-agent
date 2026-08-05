@@ -1,7 +1,4 @@
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
+import resend
 from app.core.config import settings
 
 
@@ -9,14 +6,11 @@ def send_recommendation_email(to_email: str, jobs: list[dict]):
     """
     추천 공고를 이메일로 발송합니다.
     """
-    if not settings.gmail_user or not settings.gmail_password:
-        print("이메일 설정이 없어 발송을 건너뜁니다.")
+    if not settings.resend_api_key:
+        print("Resend API 키가 없어 발송을 건너뜁니다.")
         return
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "🎯 오늘의 맞춤 채용공고 추천"
-    msg["From"] = settings.gmail_user
-    msg["To"] = to_email
+    resend.api_key = settings.resend_api_key
 
     html = f"""
     <html>
@@ -44,12 +38,15 @@ def send_recommendation_email(to_email: str, jobs: list[dict]):
     </html>
     """
 
-    msg.attach(MIMEText(html, "html"))
-
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(settings.gmail_user, settings.gmail_password)
-            server.sendmail(settings.gmail_user, to_email, msg.as_string())
+        resend.Emails.send({
+            "from": "onboarding@resend.dev",
+            "to": to_email,
+            "subject": "🎯 오늘의 맞춤 채용공고 추천",
+            "html": html,
+        })
         print(f"✅ 이메일 발송 완료: {to_email}")
     except Exception as e:
         print(f"❌ 이메일 발송 실패: {e}")
+        import traceback
+        traceback.print_exc()

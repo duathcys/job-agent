@@ -1,7 +1,10 @@
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(env_file=".env")
+
     database_url: str
     secret_key: str
     openai_api_key: str = ""
@@ -9,9 +12,7 @@ class Settings(BaseSettings):
     groq_api_key: str
     gmail_user: str = ""
     gmail_password: str = ""
-
-    class Config:
-        env_file = ".env"
+    resend_api_key: str = ""
 
 
 settings = Settings()
