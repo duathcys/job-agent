@@ -6,7 +6,7 @@ export default function HomePage() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
-  const [logs, setLogs] = useState([]);
+  const [currentStep, setCurrentStep] = useState('');
   const { logout } = useAuth();
 
   const fetchRecommendations = async () => {
@@ -23,17 +23,19 @@ export default function HomePage() {
 
   const handleRunAgent = () => {
     setRunning(true);
-    setLogs([]);
+    setCurrentStep('준비 중...');
 
     runAgentStream(
-      (message) => setLogs((prev) => [...prev, message]),
+      (message) => setCurrentStep(message),
       () => {
         setRunning(false);
+        setCurrentStep('');
         fetchRecommendations();
       },
       (error) => {
-        setLogs((prev) => [...prev, `오류: ${error}`]);
+        setCurrentStep('');
         setRunning(false);
+        alert(`오류가 발생했습니다: ${error}`);
       }
     );
   };
@@ -44,6 +46,18 @@ export default function HomePage() {
 
   return (
     <div style={styles.page}>
+      {running && (
+        <div style={styles.overlay}>
+          <div style={styles.overlayCard}>
+            <div style={styles.spinnerWrap}>
+              <div style={styles.spinner} />
+            </div>
+            <p style={styles.overlayTitle}>공고 분석 중</p>
+            <p style={styles.overlayStep}>{currentStep}</p>
+          </div>
+        </div>
+      )}
+
       <header style={styles.header}>
         <div style={styles.headerInner}>
           <div style={styles.headerLeft}>
@@ -60,7 +74,7 @@ export default function HomePage() {
               onClick={handleRunAgent}
               disabled={running}
             >
-              {running ? '분석 중...' : '공고 수집 및 분석'}
+              공고 수집 및 분석
             </button>
             <button style={styles.logoutButton} onClick={logout}>
               로그아웃
@@ -70,26 +84,6 @@ export default function HomePage() {
       </header>
 
       <main style={styles.main}>
-        {(running || logs.length > 0) && (
-          <div style={styles.progressCard}>
-            <p style={styles.progressTitle}>진행 상황</p>
-            <div style={styles.logList}>
-              {logs.map((log, i) => (
-                <div key={i} style={styles.logItem}>
-                  <span style={styles.logDot} />
-                  <span>{log}</span>
-                </div>
-              ))}
-              {running && (
-                <div style={styles.logItem}>
-                  <span style={{...styles.logDot, backgroundColor: '#FCD34D'}} />
-                  <span style={{color: '#888'}}>처리 중...</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         <div style={styles.sectionHeader}>
           <h2 style={styles.sectionTitle}>추천 공고</h2>
           <span style={styles.sectionCount}>{jobs.length}개</span>
@@ -109,7 +103,7 @@ export default function HomePage() {
             {jobs.map((job) => (
               <div key={job.id} style={styles.card}>
                 <div style={styles.cardTop}>
-                  <div>
+                  <div style={styles.cardInfo}>
                     <p style={styles.company}>{job.company}</p>
                     <p style={styles.jobTitle}>{job.title}</p>
                   </div>
@@ -123,8 +117,10 @@ export default function HomePage() {
                 )}
 
                 <div style={styles.cardBottom}>
-                  {job.deadline && (
+                  {job.deadline ? (
                     <span style={styles.deadline}>마감 {job.deadline}</span>
+                  ) : (
+                    <span />
                   )}
                   <a
                     href={job.url}
@@ -148,6 +144,50 @@ const styles = {
   page: {
     minHeight: '100vh',
     backgroundColor: '#FAFAF7',
+  },
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+  },
+  overlayCard: {
+    backgroundColor: '#fff',
+    borderRadius: '20px',
+    padding: '48px 56px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '16px',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
+    minWidth: '280px',
+  },
+  spinnerWrap: {
+    marginBottom: '4px',
+  },
+  spinner: {
+    width: '44px',
+    height: '44px',
+    border: '3px solid #EDE9FE',
+    borderTop: '3px solid #C4B5FD',
+    borderRadius: '50%',
+    animation: 'spin 0.9s linear infinite',
+  },
+  overlayTitle: {
+    fontSize: '17px',
+    fontWeight: '700',
+    color: '#2D2D2D',
+  },
+  overlayStep: {
+    fontSize: '14px',
+    color: '#888',
+    textAlign: 'center',
   },
   header: {
     backgroundColor: '#fff',
@@ -214,40 +254,6 @@ const styles = {
     margin: '0 auto',
     padding: '32px 24px',
   },
-  progressCard: {
-    backgroundColor: '#fff',
-    borderRadius: '14px',
-    padding: '20px 24px',
-    marginBottom: '28px',
-    border: '1px solid #EFEFEB',
-  },
-  progressTitle: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#888',
-    marginBottom: '12px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  logList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  logItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    fontSize: '14px',
-    color: '#2D2D2D',
-  },
-  logDot: {
-    width: '8px',
-    height: '8px',
-    borderRadius: '50%',
-    backgroundColor: '#A7F3D0',
-    flexShrink: 0,
-  },
   sectionHeader: {
     display: 'flex',
     alignItems: 'center',
@@ -292,13 +298,15 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
-    transition: 'box-shadow 0.2s',
   },
   cardTop: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: '12px',
+  },
+  cardInfo: {
+    flex: 1,
   },
   company: {
     fontSize: '13px',
