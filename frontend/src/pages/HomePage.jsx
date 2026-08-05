@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import { getRecommendations, runAgent } from '../api/jobs';
+import { useState, useEffect } from 'react';
+import { getRecommendations, runAgentStream } from '../api/jobs';
 import { useAuth } from '../hooks/useAuth';
 
 export default function HomePage() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
+  const [logs, setLogs] = useState([]);
   const { logout } = useAuth();
 
   const fetchRecommendations = async () => {
@@ -20,16 +21,23 @@ export default function HomePage() {
     }
   };
 
-  const handleRunAgent = async () => {
+  const handleRunAgent = () => {
     setRunning(true);
-    try {
-      await runAgent();
-      alert('에이전트 실행 완료! 잠시 후 새로고침해주세요.');
-    } catch (e) {
-      alert('에이전트 실행 실패');
-    } finally {
-      setRunning(false);
-    }
+    setLogs([]);
+
+    runAgentStream(
+      (message) => {
+        setLogs((prev) => [...prev, message]);
+      },
+      () => {
+        setRunning(false);
+        fetchRecommendations();
+      },
+      (error) => {
+        setLogs((prev) => [...prev, `❌ ${error}`]);
+        setRunning(false);
+      }
+    );
   };
 
   useEffect(() => {
@@ -50,6 +58,15 @@ export default function HomePage() {
         </div>
       </div>
 
+      {(running || logs.length > 0) && (
+        <div style={styles.logBox}>
+          {logs.map((log, i) => (
+            <p key={i} style={styles.logItem}>{log}</p>
+          ))}
+          {running && <p style={styles.logItem}>⏳ 처리 중...</p>}
+        </div>
+      )}
+
       <h2 style={styles.sectionTitle}>📋 추천 공고</h2>
 
       {loading ? (
@@ -69,13 +86,12 @@ export default function HomePage() {
               {job.deadline && (
                 <p style={styles.deadline}>⏰ 마감일: {job.deadline}</p>
               )}
-              <a
               
                 href={job.url}
                 target="_blank"
                 rel="noreferrer"
                 style={styles.link}
-                >
+              >
                 공고 보러가기 →
               </a>
             </div>
@@ -114,6 +130,18 @@ const styles = {
     cursor: 'pointer',
     fontSize: '14px',
   },
+  logBox: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '24px',
+  },
+  logItem: {
+    color: '#00ff00',
+    fontFamily: 'monospace',
+    fontSize: '13px',
+    margin: '4px 0',
+  },
   sectionTitle: { color: '#333', marginBottom: '16px' },
   loading: { color: '#888', textAlign: 'center', marginTop: '40px' },
   empty: { color: '#888', textAlign: 'center', marginTop: '40px' },
@@ -131,10 +159,7 @@ const styles = {
     flexDirection: 'column',
     gap: '8px',
   },
-  scoreBar: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-  },
+  scoreBar: { display: 'flex', justifyContent: 'flex-end' },
   score: {
     backgroundColor: '#EEF2FF',
     color: '#4F46E5',
