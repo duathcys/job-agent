@@ -7,9 +7,6 @@ client = Groq(api_key=settings.groq_api_key)
 
 
 async def summarize_job(description: str) -> dict:
-    """
-    채용공고 원문을 받아 구조화된 요약을 반환합니다.
-    """
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
@@ -36,7 +33,11 @@ async def summarize_job(description: str) -> dict:
         ],
         response_format={"type": "json_object"},
     )
-    return json.loads(response.choices[0].message.content)
+    result = json.loads(response.choices[0].message.content)
+    # list로 오는 경우 처리
+    if isinstance(result, list):
+        result = result[0] if result else {}
+    return result
 
 
 async def calculate_fit_score(
