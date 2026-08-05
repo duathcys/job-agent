@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getRecommendations, runAgentStream } from '../api/jobs';
 import { useAuth } from '../hooks/useAuth';
 
@@ -8,6 +9,7 @@ export default function HomePage() {
   const [running, setRunning] = useState(false);
   const [currentStep, setCurrentStep] = useState('');
   const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const fetchRecommendations = async () => {
     setLoading(true);
@@ -75,6 +77,9 @@ export default function HomePage() {
               disabled={running}
             >
               공고 수집 및 분석
+            </button>
+            <button style={styles.profileButton} onClick={() => navigate('/profile')}>
+              내 정보
             </button>
             <button style={styles.logoutButton} onClick={logout}>
               로그아웃
@@ -241,6 +246,15 @@ const styles = {
     fontSize: '13px',
     fontWeight: '600',
   },
+  profileButton: {
+    padding: '8px 18px',
+    backgroundColor: 'transparent',
+    color: '#7C3AED',
+    border: '1px solid #C4B5FD',
+    borderRadius: '8px',
+    fontSize: '13px',
+    cursor: 'pointer',
+    },
   logoutButton: {
     padding: '8px 18px',
     backgroundColor: 'transparent',
