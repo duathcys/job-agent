@@ -27,12 +27,12 @@ export default function RegisterPage() {
     try {
       await register({
         ...form,
-        skills: form.skills.split(',').map((s) => s.trim()),
-        interests: form.interests.split(',').map((s) => s.trim()),
+        skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
+        interests: form.interests.split(',').map((s) => s.trim()).filter(Boolean),
       });
       navigate('/login');
     } catch (e) {
-      setError(e.response?.data?.detail || '회원가입 실패');
+      setError(e.response?.data?.detail || '회원가입에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -41,25 +41,43 @@ export default function RegisterPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
+        <div style={styles.logo}>JA</div>
         <h1 style={styles.title}>회원가입</h1>
+        <p style={styles.subtitle}>취업 정보를 입력해주세요</p>
 
-        {error && <p style={styles.error}>{error}</p>}
+        {error && <div style={styles.errorBox}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          <input style={styles.input} name="email" type="email" placeholder="이메일" onChange={handleChange} required />
-          <input style={styles.input} name="password" type="password" placeholder="비밀번호" onChange={handleChange} required />
-          <input style={styles.input} name="job" placeholder="희망 직무 (예: 백엔드)" onChange={handleChange} defaultValue="백엔드" />
-          <input style={styles.input} name="location" placeholder="지역 (예: 서울)" onChange={handleChange} defaultValue="서울" />
-          <input style={styles.input} name="career" placeholder="경력 (예: 신입)" onChange={handleChange} defaultValue="신입" />
-          <input style={styles.input} name="skills" placeholder="기술스택 (쉼표로 구분: Java, Spring, MySQL)" onChange={handleChange} />
-          <input style={styles.input} name="interests" placeholder="관심 기업 (쉼표로 구분: 네이버, 카카오)" onChange={handleChange} />
-          <button style={styles.button} type="submit" disabled={loading}>
-            {loading ? '가입 중...' : '회원가입'}
+          {[
+            { name: 'email', label: '이메일', type: 'email', placeholder: 'example@email.com' },
+            { name: 'password', label: '비밀번호', type: 'password', placeholder: '비밀번호를 입력해주세요' },
+            { name: 'job', label: '희망 직무', type: 'text', placeholder: '예: 백엔드' },
+            { name: 'location', label: '희망 지역', type: 'text', placeholder: '예: 서울' },
+            { name: 'career', label: '경력', type: 'text', placeholder: '예: 신입' },
+            { name: 'skills', label: '기술스택', type: 'text', placeholder: '쉼표로 구분: Java, Spring, MySQL' },
+            { name: 'interests', label: '관심 기업', type: 'text', placeholder: '쉼표로 구분: 네이버, 카카오' },
+          ].map(({ name, label, type, placeholder }) => (
+            <div key={name} style={styles.inputGroup}>
+              <label style={styles.label}>{label}</label>
+              <input
+                style={styles.input}
+                name={name}
+                type={type}
+                placeholder={placeholder}
+                defaultValue={form[name]}
+                onChange={handleChange}
+                required={['email', 'password', 'job', 'location', 'career'].includes(name)}
+              />
+            </div>
+          ))}
+
+          <button style={{...styles.button, opacity: loading ? 0.7 : 1}} type="submit" disabled={loading}>
+            {loading ? '가입 중...' : '시작하기'}
           </button>
         </form>
 
         <p style={styles.link}>
-          이미 계정이 있으신가요? <Link to="/login">로그인</Link>
+          이미 계정이 있으신가요? <Link to="/login" style={styles.linkText}>로그인</Link>
         </p>
       </div>
     </div>
@@ -72,32 +90,90 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FAFAF7',
+    padding: '24px 16px',
   },
   card: {
     backgroundColor: '#fff',
-    padding: '40px',
-    borderRadius: '12px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    width: '400px',
+    padding: '48px 40px',
+    borderRadius: '20px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+    width: '100%',
+    maxWidth: '420px',
   },
-  title: { textAlign: 'center', marginBottom: '24px', color: '#333' },
-  form: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  input: {
-    padding: '12px',
-    borderRadius: '8px',
-    border: '1px solid #ddd',
+  logo: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '14px',
+    backgroundColor: '#C4B5FD',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    fontSize: '16px',
+    marginBottom: '20px',
+  },
+  title: {
+    fontSize: '22px',
+    fontWeight: '700',
+    color: '#2D2D2D',
+    marginBottom: '6px',
+  },
+  subtitle: {
     fontSize: '14px',
+    color: '#888',
+    marginBottom: '32px',
+  },
+  errorBox: {
+    backgroundColor: '#FFF0F0',
+    color: '#E53E3E',
+    padding: '12px 16px',
+    borderRadius: '10px',
+    fontSize: '13px',
+    marginBottom: '16px',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+  },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  label: {
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#555',
+  },
+  input: {
+    padding: '12px 16px',
+    borderRadius: '10px',
+    border: '1.5px solid #E8E8E4',
+    fontSize: '14px',
+    backgroundColor: '#FAFAF7',
+    outline: 'none',
   },
   button: {
-    padding: '12px',
-    backgroundColor: '#4F46E5',
+    padding: '14px',
+    backgroundColor: '#C4B5FD',
     color: '#fff',
     border: 'none',
-    borderRadius: '8px',
-    fontSize: '16px',
-    cursor: 'pointer',
+    borderRadius: '10px',
+    fontSize: '15px',
+    fontWeight: '600',
+    marginTop: '8px',
   },
-  error: { color: 'red', fontSize: '14px', textAlign: 'center' },
-  link: { textAlign: 'center', marginTop: '16px', fontSize: '14px' },
+  link: {
+    textAlign: 'center',
+    marginTop: '24px',
+    fontSize: '13px',
+    color: '#888',
+  },
+  linkText: {
+    color: '#C4B5FD',
+    fontWeight: '600',
+  },
 };
