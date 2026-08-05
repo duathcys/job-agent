@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getRecommendations, runAgentStream } from '../api/jobs';
 import { useAuth } from '../hooks/useAuth';
 
@@ -86,12 +86,13 @@ export default function HomePage() {
               {job.deadline && (
                 <p style={styles.deadline}>⏰ 마감일: {job.deadline}</p>
               )}
+              <a
               
                 href={job.url}
                 target="_blank"
                 rel="noreferrer"
                 style={styles.link}
-              >
+                >
                 공고 보러가기 →
               </a>
             </div>
