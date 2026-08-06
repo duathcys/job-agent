@@ -117,6 +117,9 @@ def generate_html(data: dict) -> str:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{data.get("name", "")} 포트폴리오</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{
@@ -272,6 +275,29 @@ def generate_pdf(data: dict) -> bytes:
     """
     포트폴리오 PDF를 생성합니다.
     """
-    from weasyprint import HTML
+    from weasyprint import HTML, CSS
+    import os
+
+    font_dir = os.path.join(os.path.dirname(__file__), "../static/fonts")
+    font_regular = os.path.join(font_dir, "NotoSansKR-Regular.ttf")
+    font_bold = os.path.join(font_dir, "NotoSansKR-Bold.ttf")
+
     html_content = generate_html(data)
-    return HTML(string=html_content).write_pdf()
+
+    font_css = CSS(string=f"""
+        @font-face {{
+            font-family: 'NotoSansKR';
+            src: url('file://{font_regular}');
+            font-weight: 400;
+        }}
+        @font-face {{
+            font-family: 'NotoSansKR';
+            src: url('file://{font_bold}');
+            font-weight: 700;
+        }}
+        body {{
+            font-family: 'NotoSansKR', sans-serif !important;
+        }}
+    """)
+
+    return HTML(string=html_content).write_pdf(stylesheets=[font_css])
