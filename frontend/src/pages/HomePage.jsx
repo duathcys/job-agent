@@ -78,6 +78,9 @@ export default function HomePage() {
             >
               공고 수집 및 분석
             </button>
+            <button style={styles.portfolioButton} onClick={() => navigate('/portfolio')}>
+            포트폴리오 생성
+            </button>
             <button style={styles.profileButton} onClick={() => navigate('/profile')}>
               내 정보
             </button>
@@ -255,6 +258,15 @@ const styles = {
     fontSize: '13px',
     cursor: 'pointer',
     },
+  portfolioButton: {
+    padding: '8px 18px',
+    backgroundColor: 'transparent',
+    color: '#7C3AED',
+    border: '1px solid #C4B5FD',
+    borderRadius: '8px',
+    fontSize: '13px',
+    cursor: 'pointer',
+  },
   logoutButton: {
     padding: '8px 18px',
     backgroundColor: 'transparent',

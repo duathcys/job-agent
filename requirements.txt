@@ -21,3 +21,5 @@ pytest-asyncio
 resend
 pdfplumber
 python-multipart
+weasyprint
+jinja2
