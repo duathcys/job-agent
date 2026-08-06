@@ -27,18 +27,23 @@ async def analyze_resume(text: str) -> dict:
         model="llama-3.1-8b-instant",
         messages=[
             {
+                "role": "system",
+                "content": "You are a resume analyzer. You must respond ONLY with the exact JSON format requested. Do not add any extra fields.",
+            },
+            {
                 "role": "user",
                 "content": f"""
-다음 이력서를 분석해서 JSON 형식으로 반환해줘.
+다음 이력서를 분석해서 아래 JSON 형식으로만 반환해줘.
+절대 다른 필드 추가하지 말고, 아래 형식 그대로만 출력해.
 
 이력서:
 {text[:3000]}
 
-출력 형식 (JSON만 출력, 다른 말 하지 말 것):
+반드시 이 형식으로만 출력:
 {{
     "skills": ["Java", "Spring", "MySQL"],
-    "career": "신입 또는 경력 연차",
-    "job": "적합한 직무 (예: 백엔드, 프론트엔드, 풀스택)",
+    "career": "신입",
+    "job": "백엔드",
     "summary": "이력서 한 줄 요약",
     "recommended_jobs": ["백엔드 개발자", "서버 개발자"],
     "missing_skills": ["Docker", "AWS"]
