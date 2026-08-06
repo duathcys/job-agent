@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMe, updateMe } from '../api/auth';
+import { uploadResume } from '../api/resume';
 
 export default function ProfilePage() {
   const [form, setForm] = useState(null);
@@ -9,6 +10,8 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeResult, setResumeResult] = useState(null);
 
   useEffect(() => {
     getMe()
@@ -26,6 +29,46 @@ export default function ProfilePage() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setResumeLoading(true);
+    setResumeResult(null);
+    try {
+        const res = await uploadResume(file, false);
+        setResumeResult(res.data.result);
+    } catch (e) {
+        setError('이력서 분석에 실패했습니다.');
+    } finally {
+        setResumeLoading(false);
+    }
+    };
+
+  const handleApplyResume = async () => {
+    if (!resumeResult) return;
+    setSaving(true);
+    try {
+        await updateMe({
+        job: resumeResult.job,
+        career: resumeResult.career,
+        skills: resumeResult.skills,
+        });
+        setForm({
+        ...form,
+        job: resumeResult.job,
+        career: resumeResult.career,
+        skills: resumeResult.skills.join(', '),
+        });
+        setSuccess(true);
+        setResumeResult(null);
+        setTimeout(() => setSuccess(false), 3000);
+    } catch (e) {
+        setError('프로필 적용에 실패했습니다.');
+    } finally {
+        setSaving(false);
+    }
+    };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,6 +118,34 @@ export default function ProfilePage() {
         <div style={styles.card}>
           <h1 style={styles.title}>내 정보</h1>
           <p style={styles.subtitle}>{form.email}</p>
+          <div style={styles.resumeSection}>
+            <p style={styles.resumeTitle}>이력서로 자동 분석</p>
+            <label style={styles.uploadLabel}>
+                <input
+                type="file"
+                accept=".pdf"
+                onChange={handleResumeUpload}
+                style={{ display: 'none' }}
+                />
+                {resumeLoading ? '분석 중...' : 'PDF 이력서 업로드'}
+            </label>
+
+            {resumeResult && (
+                <div style={styles.resumeResult}>
+                <p style={styles.resumeResultTitle}>분석 결과</p>
+                <p style={styles.resumeItem}><b>직무:</b> {resumeResult.job}</p>
+                <p style={styles.resumeItem}><b>경력:</b> {resumeResult.career}</p>
+                <p style={styles.resumeItem}><b>기술:</b> {resumeResult.skills?.join(', ')}</p>
+                <p style={styles.resumeItem}><b>요약:</b> {resumeResult.summary}</p>
+                {resumeResult.missing_skills?.length > 0 && (
+                    <p style={styles.resumeItem}><b>부족한 기술:</b> {resumeResult.missing_skills.join(', ')}</p>
+                )}
+                <button style={styles.applyButton} onClick={handleApplyResume}>
+                    프로필에 적용
+                </button>
+                </div>
+            )}
+            </div>
 
           {error && <div style={styles.errorBox}>{error}</div>}
           {success && <div style={styles.successBox}>저장되었습니다!</div>}
@@ -267,4 +338,57 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
   },
+  resumeSection: {
+    backgroundColor: '#F5F3FF',
+    borderRadius: '12px',
+    padding: '20px',
+    marginBottom: '24px',
+    },
+  resumeTitle: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#7C3AED',
+    marginBottom: '12px',
+    },
+  uploadLabel: {
+    display: 'inline-block',
+    padding: '10px 20px',
+    backgroundColor: '#C4B5FD',
+    color: '#fff',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    },
+  resumeResult: {
+    marginTop: '16px',
+    padding: '16px',
+    backgroundColor: '#fff',
+    borderRadius: '10px',
+    border: '1px solid #E8E8E4',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    },
+  resumeResultTitle: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#2D2D2D',
+    marginBottom: '4px',
+    },
+  resumeItem: {
+    fontSize: '13px',
+    color: '#555',
+    },
+  applyButton: {
+    marginTop: '8px',
+    padding: '10px',
+    backgroundColor: '#7C3AED',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    },
 };
