@@ -128,18 +128,18 @@ async def run_agent_stream(
 
 @router.get("/recommendations")
 def get_recommendations(
+    limit: int = 10,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     from app.models.job import JobPosting
+    from app.services.filter_service import filter_jobs_for_user
 
-    jobs = (
-        db.query(JobPosting)
-        .filter(JobPosting.fit_score.isnot(None))
-        .order_by(JobPosting.fit_score.desc())
-        .limit(5)
-        .all()
-    )
+    # 전체 공고 가져오기
+    all_jobs = db.query(JobPosting).all()
+
+    # 사용자별 필터링
+    filtered = filter_jobs_for_user(all_jobs, current_user, limit=limit)
 
     return [
         {
@@ -152,7 +152,7 @@ def get_recommendations(
             "deadline": job.deadline,
             "required_skills": job.required_skills,
         }
-        for job in jobs
+        for job in filtered
     ]
 
 

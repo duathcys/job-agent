@@ -1,6 +1,6 @@
 import client from './client';
 
-export const getRecommendations = () => client.get('/agent/recommendations');
+export const getRecommendations = () => client.get('/agent/recommendations?limit=15');
 export const getJobs = () => client.get('/jobs/');
 
 export const runAgentStream = (onMessage, onDone, onError) => {
