@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import users, jobs, auth, agent, resume, portfolio
+from app.api.v1.endpoints import users, jobs, auth, agent, resume, portfolio, chat
 
 router = APIRouter()
 
@@ -9,3 +9,4 @@ router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
 router.include_router(agent.router, prefix="/agent", tags=["agent"])
 router.include_router(resume.router, prefix="/resume", tags=["resume"])
 router.include_router(portfolio.router, prefix="/portfolio", tags=["portfolio"])
+router.include_router(chat.router, prefix="/chat", tags=["chat"])

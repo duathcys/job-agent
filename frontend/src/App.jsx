@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import ChatPage from './pages/ChatPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import PortfolioPage from './pages/PortfolioPage';
@@ -40,6 +41,14 @@ export default function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/chat"
+          element={
+            <PrivateRoute>
+              <ChatPage />
+            </PrivateRoute>
+        }
+      />
       </Routes>
     </BrowserRouter>
   );

@@ -81,6 +81,9 @@ export default function HomePage() {
             <button style={styles.portfolioButton} onClick={() => navigate('/portfolio')}>
             포트폴리오 생성
             </button>
+            <button style={styles.chatButton} onClick={() => navigate('/chat')}>
+            AI 채팅
+            </button>
             <button style={styles.profileButton} onClick={() => navigate('/profile')}>
               내 정보
             </button>
@@ -382,4 +385,14 @@ const styles = {
     backgroundColor: '#EDE9FE',
     borderRadius: '8px',
   },
+  chatButton: {
+    padding: '8px 18px',
+    backgroundColor: '#C4B5FD',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+},
 };
