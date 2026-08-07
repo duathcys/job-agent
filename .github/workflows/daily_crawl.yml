@@ -1,0 +1,16 @@
+name: 매일 채용공고 수집
+
+on:
+  schedule:
+    - cron: '0 18 * * *'  # UTC 18시 = 한국 새벽 3시
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 전체 파이프라인 실행
+        run: |
+          curl -X POST \
+            -H "x-scheduler-key: ${{ secrets.SCHEDULER_SECRET_KEY }}" \
+            https://job-agent-backend-u9d2.onrender.com/api/v1/agent/schedule/run-now

@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -158,9 +158,26 @@ def get_recommendations(
 
 @router.post("/schedule/run-now")
 def run_now(
-    current_user: User = Depends(get_current_user),
+    x_scheduler_key: str = Header(None),
 ):
     from app.scheduler import run_agent_for_all_users
+    from app.core.config import settings
     import threading
+
+    if x_scheduler_key != settings.scheduler_secret_key:
+        raise HTTPException(status_code=401, detail="인증 실패")
+
     threading.Thread(target=run_agent_for_all_users).start()
     return {"message": "스케줄러 즉시 실행 시작"}
+
+@router.post("/schedule/analyze")
+def analyze_now(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    사용자별 분석을 즉시 실행합니다.
+    """
+    from app.scheduler import analyze_jobs_for_users
+    import threading
+    threading.Thread(target=analyze_jobs_for_users).start()
+    return {"message": "사용자별 분석 시작"}

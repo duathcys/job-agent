@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     gmail_user: str = ""
     gmail_password: str = ""
     resend_api_key: str = ""
+    scheduler_secret_key: str = ""
 
 
 settings = Settings()
