@@ -42,34 +42,35 @@ async def summarize_job(description: str) -> dict:
 
 async def calculate_fit_score(
     user_skills: list[str],
-    job_required_skills: list[str],
-    job_preferred_skills: list[str],
+    job_required_skills: list,
+    job_preferred_skills: list,
+    job_title: str = "",
 ) -> dict:
     """
     사용자 기술스택과 공고 기술스택을 비교해 적합도를 반환합니다.
+    Agent 기반으로 정확도 향상.
     """
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {
-                "role": "user",
-                "content": f"""
-사용자의 기술스택과 채용공고의 요구 기술을 비교해서 적합도를 분석해줘.
+    from agent.fit_score_agent import calculate_fit_score_agent
 
-사용자 기술스택: {user_skills}
-필수 기술: {job_required_skills}
-우대 기술: {job_preferred_skills}
+    required_text = job_required_skills if isinstance(job_required_skills, str) else " ".join(job_required_skills or [])
+    preferred_text = job_preferred_skills if isinstance(job_preferred_skills, str) else " ".join(job_preferred_skills or [])
 
-출력 형식 (JSON만 출력, 다른 말 하지 말 것):
-{{
-    "fit_score": 85,
-    "matched_skills": ["Java", "Spring"],
-    "missing_skills": ["Docker"],
-    "comment": "한 줄 평가"
-}}
-""",
-            }
-        ],
-        response_format={"type": "json_object"},
-    )
-    return json.loads(response.choices[0].message.content)
+    try:
+        result = calculate_fit_score_agent(
+            user_skills=user_skills,
+            job_title=job_title,
+            job_required=required_text,
+            job_preferred=preferred_text,
+        )
+        return result
+    except Exception as e:
+        print(f"Agent 적합도 계산 오류: {e}")
+        # fallback
+        matched = list(set([s.lower() for s in user_skills]) &
+                      set([s.lower() for s in (job_required_skills if isinstance(job_required_skills, list) else [])]))
+        return {
+            "fit_score": len(matched) * 10,
+            "matched_skills": matched,
+            "missing_skills": [],
+            "comment": "기본 매칭으로 계산됨",
+        }
