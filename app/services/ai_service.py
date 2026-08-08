@@ -5,6 +5,47 @@ from app.core.config import settings
 
 client = Groq(api_key=settings.groq_api_key)
 
+SKILL_ALIASES = {
+    "spring": ["spring boot", "spring framework", "spring mvc", "spring data", "springboot"],
+    "jpa": ["hibernate", "spring data jpa", "spring data"],
+    "javascript": ["js", "es6", "typescript", "ts"],
+    "typescript": ["ts", "javascript", "js"],
+    "react": ["react.js", "reactjs", "react native"],
+    "node": ["node.js", "nodejs", "express", "expressjs"],
+    "mysql": ["mariadb", "rds mysql"],
+    "kubernetes": ["k8s"],
+    "aws": ["ec2", "s3", "lambda", "rds", "eks", "ecs", "cloudfront"],
+    "docker": ["container", "dockerfile"],
+    "redis": ["elasticache"],
+    "python": ["django", "flask", "fastapi"],
+    "java": ["kotlin", "spring"],
+}
+
+
+def is_skill_match(user_skill: str, job_skill: str) -> bool:
+    """유사 기술까지 포함해서 매칭합니다."""
+    u = user_skill.lower().strip()
+    j = job_skill.lower().strip()
+
+    # 직접 매칭
+    if u in j or j in u:
+        return True
+
+    # 유사 기술 매칭 (user → job)
+    aliases = SKILL_ALIASES.get(u, [])
+    if any(a in j or j in a for a in aliases):
+        return True
+
+    # 역방향 유사 기술 매칭 (job → user)
+    for key, vals in SKILL_ALIASES.items():
+        if u == key:
+            continue
+        if any(u in v or v in u for v in vals):
+            if key in j or j in key:
+                return True
+
+    return False
+
 
 async def summarize_job(description: str) -> dict:
     response = client.chat.completions.create(
@@ -34,7 +75,6 @@ async def summarize_job(description: str) -> dict:
         response_format={"type": "json_object"},
     )
     result = json.loads(response.choices[0].message.content)
-    # list로 오는 경우 처리
     if isinstance(result, list):
         result = result[0] if result else {}
     return result
@@ -63,6 +103,7 @@ async def calculate_fit_score(
                     "content": f"""
 공고에서 기술스택만 추출해줘.
 프로그래밍 언어, 프레임워크, DB, 인프라, 툴만 포함.
+자격요건 텍스트, 경력, 학력 등은 제외.
 
 필수:
 {required_text[:500]}
@@ -87,17 +128,18 @@ async def calculate_fit_score(
         required_skills = []
         preferred_skills = []
 
-    # 2단계: 코드로 매칭 계산
-    user_skills_lower = [s.lower() for s in user_skills]
+    # 2단계: 유사 기술 포함 매칭 계산
+    user_skills_lower = [s.lower().strip() for s in user_skills]
 
     matched_required = [
         s for s in required_skills
-        if any(u in s or s in u for u in user_skills_lower)
+        if any(is_skill_match(u, s) for u in user_skills_lower)
     ]
     missing_required = [s for s in required_skills if s not in matched_required]
+
     matched_preferred = [
         s for s in preferred_skills
-        if any(u in s or s in u for u in user_skills_lower)
+        if any(is_skill_match(u, s) for u in user_skills_lower)
     ]
     missing_preferred = [s for s in preferred_skills if s not in matched_preferred]
 
@@ -111,6 +153,10 @@ async def calculate_fit_score(
         comment_response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
+                {
+                    "role": "system",
+                    "content": "반드시 한국어 1문장만 출력. 다른 언어 절대 사용 금지.",
+                },
                 {
                     "role": "user",
                     "content": f"""

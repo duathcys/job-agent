@@ -114,7 +114,7 @@ async def run_agent_stream(
             ]
             db2.close()
 
-            send_recommendation_email(user_email, job_list)
+            # send_recommendation_email(user_email, job_list)
 
             yield "data: {\"step\": 4, \"message\": \"✅ 이메일 발송 완료!\", \"done\": true}\n\n"
 

@@ -103,7 +103,7 @@ def analyze_jobs_for_users():
                 }
                 for j in top_jobs
             ]
-            send_recommendation_email(user.email, job_list)
+            # send_recommendation_email(user.email, job_list)
             print(f"  [{user.email}] 완료")
 
     except Exception as e:
