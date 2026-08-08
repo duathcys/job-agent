@@ -8,7 +8,7 @@ from agent.tools.fit_score_tool import calculate_fit_scores
 from agent.tools.db_search_tool import get_recommendations, search_jobs_by_keyword
 
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    mmodel="llama-3.1-8b-instant",
     api_key=settings.groq_api_key,
     temperature=0,
 )
