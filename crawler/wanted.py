@@ -87,12 +87,15 @@ def fetch_job_detail(job_id: int) -> dict:
 
 
 def parse_job(raw: dict, detail: dict) -> dict:
+    required_text = detail.get("detail", {}).get("requirements", "")
+    preferred_text = detail.get("detail", {}).get("preferred_points", "")
+
     return {
         "company": raw.get("company", {}).get("name", ""),
         "title": raw.get("position", ""),
         "description": detail.get("detail", {}).get("main_tasks", ""),
-        "required_skills": detail.get("detail", {}).get("requirements", ""),
-        "preferred_skills": detail.get("detail", {}).get("preferred_points", ""),
+        "required_skills": required_text,   # 텍스트 그대로 저장
+        "preferred_skills": preferred_text,  # 텍스트 그대로 저장
         "location": raw.get("address", {}).get("location", ""),
         "career": str(raw.get("annual_from", "")) if raw.get("annual_from") is not None else "",
         "deadline": str(raw.get("due_time", "")) if raw.get("due_time") else None,
