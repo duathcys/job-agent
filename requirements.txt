@@ -23,3 +23,4 @@ pdfplumber
 python-multipart
 weasyprint
 jinja2
+google-genai
