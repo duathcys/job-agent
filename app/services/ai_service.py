@@ -1,9 +1,13 @@
 import json
-from groq import Groq
+
+from google import genai
+from google.genai import types
 
 from app.core.config import settings
 
-client = Groq(api_key=settings.groq_api_key)
+client = genai.Client(api_key=settings.gemini_api_key)
+
+MODEL = "gemini-2.5-flash"
 
 SKILL_ALIASES = {
     "spring": ["spring boot", "spring framework", "spring mvc", "spring data", "springboot"],
@@ -27,16 +31,13 @@ def is_skill_match(user_skill: str, job_skill: str) -> bool:
     u = user_skill.lower().strip()
     j = job_skill.lower().strip()
 
-    # 직접 매칭
     if u in j or j in u:
         return True
 
-    # 유사 기술 매칭 (user → job)
     aliases = SKILL_ALIASES.get(u, [])
     if any(a in j or j in a for a in aliases):
         return True
 
-    # 역방향 유사 기술 매칭 (job → user)
     for key, vals in SKILL_ALIASES.items():
         if u == key:
             continue
@@ -47,13 +48,24 @@ def is_skill_match(user_skill: str, job_skill: str) -> bool:
     return False
 
 
+def _generate_json(prompt: str, system_instruction: str | None = None) -> dict:
+    """Gemini를 JSON 모드로 호출하고 파싱된 dict를 반환합니다."""
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            response_mime_type="application/json",
+        ),
+    )
+    result = json.loads(response.text)
+    if isinstance(result, list):
+        result = result[0] if result else {}
+    return result
+
+
 async def summarize_job(description: str) -> dict:
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {
-                "role": "user",
-                "content": f"""
+    prompt = f"""
 다음 채용공고를 아래 JSON 형식으로 요약해줘.
 
 채용공고:
@@ -69,15 +81,8 @@ async def summarize_job(description: str) -> dict:
     "deadline": "마감일",
     "one_line_summary": "한 줄 요약"
 }}
-""",
-            }
-        ],
-        response_format={"type": "json_object"},
-    )
-    result = json.loads(response.choices[0].message.content)
-    if isinstance(result, list):
-        result = result[0] if result else {}
-    return result
+"""
+    return _generate_json(prompt)
 
 
 async def calculate_fit_score(
@@ -91,16 +96,8 @@ async def calculate_fit_score(
 
     # 1단계: 공고에서 기술스택 추출
     try:
-        extract_response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "기술스택만 추출해서 JSON으로 반환. 다른 말 금지.",
-                },
-                {
-                    "role": "user",
-                    "content": f"""
+        extracted = _generate_json(
+            f"""
 공고에서 기술스택만 추출해줘.
 프로그래밍 언어, 프레임워크, DB, 인프라, 툴만 포함.
 자격요건 텍스트, 경력, 학력 등은 제외.
@@ -117,11 +114,8 @@ async def calculate_fit_score(
     "preferred": ["Docker", "AWS"]
 }}
 """,
-                }
-            ],
-            response_format={"type": "json_object"},
+            system_instruction="기술스택만 추출해서 JSON으로 반환. 다른 말 금지.",
         )
-        extracted = json.loads(extract_response.choices[0].message.content)
         required_skills = [s.lower() for s in extracted.get("required", [])]
         preferred_skills = [s.lower() for s in extracted.get("preferred", [])]
     except Exception:
@@ -150,16 +144,9 @@ async def calculate_fit_score(
 
     # 3단계: 코멘트 생성
     try:
-        comment_response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "반드시 한국어 1문장만 출력. 다른 언어 절대 사용 금지.",
-                },
-                {
-                    "role": "user",
-                    "content": f"""
+        comment_response = client.models.generate_content(
+            model=MODEL,
+            contents=f"""
 취업 지원 관점에서 1문장으로 평가해줘.
 
 적합도: {fit_score}%
@@ -169,10 +156,11 @@ async def calculate_fit_score(
 
 한국어 1문장만 출력.
 """,
-                }
-            ],
+            config=types.GenerateContentConfig(
+                system_instruction="반드시 한국어 1문장만 출력. 다른 언어 절대 사용 금지.",
+            ),
         )
-        comment = comment_response.choices[0].message.content.strip()
+        comment = comment_response.text.strip()
     except Exception:
         comment = f"필수 기술 {len(required_skills)}개 중 {len(matched_required)}개 보유"
 
